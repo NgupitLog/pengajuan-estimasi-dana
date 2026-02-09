@@ -1,0 +1,286 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+<meta charset="UTF-8">
+<title>Form Pengajuan Dana</title>
+
+<style>
+body {
+  font-family: Arial, sans-serif;
+  background:#f4f6f8;
+  padding:20px;
+}
+h2 { color:#0b4ea2; }
+
+.header, .so-block {
+  background:#fff;
+  padding:15px;
+  border-radius:6px;
+  margin-bottom:20px;
+  border-left:5px solid #ff8c00;
+}
+
+label { font-size:13px; font-weight:bold; }
+input, select {
+  width:100%;
+  padding:6px;
+  margin-bottom:10px;
+  font-size:13px;
+}
+
+.row { display:flex; gap:10px; }
+.col { flex:1; }
+
+table { width:100%; border-collapse:collapse; margin-top:10px; }
+th {
+  background:#0b4ea2;
+  color:#fff;
+  padding:6px;
+}
+td { padding:6px; }
+
+.btn {
+  background:#ff8c00;
+  color:#fff;
+  border:none;
+  padding:6px 12px;
+  border-radius:4px;
+  cursor:pointer;
+}
+.btn-blue { background:#0b4ea2; }
+.btn-danger { background:#e74c3c; }
+
+.total {
+  margin-top:10px;
+  font-weight:bold;
+}
+</style>
+</head>
+
+<body>
+
+<h2>Form Pengajuan Estimasi Dana</h2>
+
+<!-- HEADER -->
+<div class="header">
+  <div class="row">
+    <div class="col">
+      <label>PIC</label>
+      <select id="pic">
+        <option value="">-- pilih --</option>
+        <option>Farah</option>
+        <option>Beta</option>
+        <option>Dian</option>
+        <option>Imri</option>
+        <option>Tias</option>
+        <option>Febi</option>
+        <option>Avril</option>
+        <option>Denada</option>
+        <option>Fadly</option>
+        <option>Logistik Team</option>
+        <option>Others</option>
+      </select>
+    </div>
+
+    <div class="col">
+      <label>Belongs To</label>
+      <select id="belongsTo">
+        <option value="">-- pilih --</option>
+        <option>Ngupit</option>
+        <option>Paksi</option>
+      </select>
+    </div>
+
+    <div class="col">
+      <label>Company Name</label>
+      <select id="companyName">
+        <option value="">-- pilih company --</option>
+      </select>
+    </div>
+  </div>
+</div>
+
+<div id="soContainer"></div>
+
+<button type="button" class="btn btn-blue" onclick="addSO()">+ Tambah SO</button>
+<br><br>
+<button type="button" class="btn" onclick="submitData()">SUBMIT</button>
+
+<script>
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwLS1VOGQkYqBTkyJTtwA22yldbHC1SCmyvmXPKsa1Yl8IOFUVfIoL6XQcOi9jFVRqNVQ/exec";
+
+/* ======================
+   LOAD COMPANY DROPDOWN
+   ====================== */
+fetch(SCRIPT_URL)
+  .then(res => res.json())
+  .then(list => {
+    const select = document.getElementById("companyName");
+    list.forEach(c => {
+      const opt = document.createElement("option");
+      opt.value = c;
+      opt.textContent = c;
+      select.appendChild(opt);
+    });
+  })
+  .catch(err => console.error("Gagal load company", err));
+
+/* ======================
+   SO & BIAYA
+   ====================== */
+function addSO() {
+  const so = document.createElement("div");
+  so.className = "so-block";
+
+  so.innerHTML = `
+    <h3>Detail SO</h3>
+
+    <div class="row">
+      <div class="col">
+        <label>SO Number</label>
+        <input class="soNumber">
+      </div>
+      <div class="col">
+        <label>BL / AJU</label>
+        <input class="blAju">
+      </div>
+      <div class="col">
+        <label>FCL / LCL</label>
+        <select class="shipmentType">
+          <option>FCL</option>
+          <option>LCL</option>
+        </select>
+      </div>
+      <div class="col">
+        <label>QTY</label>
+        <input class="qty">
+      </div>
+    </div>
+
+    <table>
+      <thead>
+        <tr>
+          <th style="width:40%">Jenis Biaya</th>
+          <th style="width:50%">Nominal (Rp)</th>
+          <th style="width:10%; text-align:center">Aksi</th>
+        </tr>
+      </thead>
+      <tbody class="items"></tbody>
+    </table>
+
+    <button type="button" class="btn" onclick="addItem(this)">+ Tambah Biaya</button>
+    <div class="total">Total SO: Rp <span class="totalSo">0</span></div>
+  `;
+
+  document.getElementById("soContainer").appendChild(so);
+  addItem(so.querySelector(".btn"));
+}
+
+function addItem(btn) {
+  const tbody = btn.parentElement.querySelector(".items");
+  const tr = document.createElement("tr");
+
+  tr.innerHTML = `
+    <td>
+      <select class="jenisBiaya">
+        <option>Storage</option>
+        <option>Handling</option>
+        <option>Delivery</option>
+        <option>Other</option>
+      </select>
+    </td>
+    <td>
+      <input type="number"
+             class="nominal"
+             value="0"
+             oninput="calc(this)"
+             style="width:100%; padding-right:10px;">
+    </td>
+    <td style="text-align:center;">
+      <button type="button"
+              class="btn btn-danger"
+              style="padding:4px 10px;"
+              onclick="removeRow(this)">X</button>
+    </td>
+  `;
+
+  tbody.appendChild(tr);
+}
+
+function calc(input) {
+  const so = input.closest(".so-block");
+  let total = 0;
+  so.querySelectorAll(".nominal").forEach(n => total += Number(n.value || 0));
+  so.querySelector(".totalSo").innerText = total.toLocaleString("id-ID");
+}
+
+function removeRow(btn) {
+  const so = btn.closest(".so-block");
+  btn.closest("tr").remove();
+  const n = so.querySelector(".nominal");
+  if (n) calc(n);
+}
+
+/* ======================
+   SUBMIT
+   ====================== */
+function submitData() {
+  if (!pic.value || !belongsTo.value || !companyName.value) {
+    alert("Header wajib diisi");
+    return;
+  }
+
+  const data = {
+    pic: pic.value,
+    belongsTo: belongsTo.value,
+    companyName: companyName.value,
+    soList: []
+  };
+
+  document.querySelectorAll(".so-block").forEach(so => {
+    const items = [];
+
+    so.querySelectorAll("tbody tr").forEach(r => {
+      const nominal = Number(r.querySelector(".nominal").value || 0);
+      if (nominal > 0) {
+        items.push({
+          jenisBiaya: r.querySelector(".jenisBiaya").value,
+          nominal
+        });
+      }
+    });
+
+    if (items.length === 0) return;
+
+    data.soList.push({
+      soNumber: so.querySelector(".soNumber").value,
+      blAju: so.querySelector(".blAju").value,
+      shipmentType: so.querySelector(".shipmentType").value,
+      qty: so.querySelector(".qty").value,
+      items
+    });
+  });
+
+  if (data.soList.length === 0) {
+    alert("Minimal 1 SO dengan biaya");
+    return;
+  }
+
+  fetch(SCRIPT_URL, {
+    method: "POST",
+    body: JSON.stringify(data)
+  })
+  .then(r => r.json())
+  .then(() => {
+    alert("BERHASIL");
+    location.reload();
+  })
+  .catch(() => alert("GAGAL"));
+}
+
+/* default 1 SO */
+addSO();
+</script>
+
+</body>
+</html>
